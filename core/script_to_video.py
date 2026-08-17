@@ -2,7 +2,9 @@ import os
 import re
 import subprocess
 import asyncio
+import time
 import edge_tts
+from gtts import gTTS
 from PIL import Image, ImageDraw, ImageFont
 
 VOICE = "en-US-AriaNeural"
@@ -13,8 +15,21 @@ def split_script(text):
     sentences = re.split(r'(?<=[.!?])\s+|\n+', text.strip())
     return [s.strip() for s in sentences if len(s.strip()) > 3][:8]
 
-def _tts(text, out_path):
+def _tts_edge(text, out_path):
     asyncio.run(edge_tts.Communicate(text, VOICE).save(out_path))
+
+def _tts_gtts(text, out_path):
+    tts = gTTS(text=text, lang='en')
+    tts.save(out_path)
+
+def _tts(text, out_path):
+    """Try Edge TTS first, fallback to gTTS with delay to avoid rate limits"""
+    try:
+        _tts_edge(text, out_path)
+    except Exception as e:
+        print(f"Edge TTS failed ({e}), falling back to gTTS...")
+        time.sleep(1)  # Anti-rate-limit delay
+        _tts_gtts(text, out_path)
 
 def _duration(path):
     r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
@@ -55,6 +70,11 @@ def synthesize_video_from_script(script, workdir="synth"):
         mp3 = os.path.join(workdir, f"scene_{i}.mp3")
         png = os.path.join(workdir, f"scene_{i}.png")
         seg = os.path.join(workdir, f"seg_{i}.mp4")
+        
+        # Add delay between requests to prevent rate limiting
+        if i > 0:
+            time.sleep(1)
+            
         _tts(scene, mp3)
         _make_slide(scene, png)
         subprocess.run(["ffmpeg", "-y", "-loop", "1", "-i", png, "-i", mp3,
