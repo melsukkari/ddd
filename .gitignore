@@ -51,3 +51,11 @@
 !.browserslistrc
 
 *.DS_Store
+
+# Allow Python project files
+!requirements.txt
+!app.py
+!colab_runner.py
+!core/
+!core/__init__.py
+!core/video_pipeline.py
