@@ -77,4 +77,4 @@ with gr.Blocks(theme=gr.themes.Soft(), title="Shorts AI SaaS", css="footer {visi
     script_btn.click(process_from_script, inputs=[script_input], outputs=OUT)
 
 if __name__ == "__main__":
-    demo.launch(share=True, server_name="0.0.0.0", server_port=7860)
+    demo.launch(share=True, server_name="0.0.0.0", server_port=7860, allow_concurrency=True)
